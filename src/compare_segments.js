@@ -39,9 +39,7 @@ module.exports = function compareSegments(le1, le2) {
       if (p1[0] === p2[0] && p1[1] === p2[1]) return 0;
       else return le1.contourId > le2.contourId ? 1 : -1;
     }
-  } else { // Segments are collinear, but belong to separate polygons
-    return le1.isSubject ? -1 : 1;
   }
 
-  return compareEvents(le1, le2) === 1 ? 1 : -1;
+  return compareEvents(le1, le2) === 1 ? -1 : 1;
 };
