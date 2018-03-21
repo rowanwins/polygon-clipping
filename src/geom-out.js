@@ -2,6 +2,16 @@ const { cmpPoints } = require('./flp')
 const { compareVectorAngles } = require('./vector')
 
 class Ring {
+  static factory (segments) {
+    const ringsOut = []
+    for (let i = 0, iMax = segments.length; i < iMax; i++) {
+      const segment = segments[i]
+      if (!segment.isInResult || segment.ringOut) continue
+      ringsOut.push(new Ring(segment))
+    }
+    return ringsOut
+  }
+
   constructor (segment) {
     this.firstSegment = segment
     this.poly = null
