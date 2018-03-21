@@ -20,7 +20,7 @@ describe('ring', () => {
     seg2._cache['isInResult'] = true
     seg3._cache['isInResult'] = true
 
-    const ring = new Ring(seg1)
+    const ring = Ring.factory([seg1, seg2, seg3])[0]
 
     expect(ring.enclosingRing).toBeNull()
     expect(ring.isExteriorRing).toBeTruthy()
@@ -40,7 +40,7 @@ describe('ring', () => {
     seg2._cache['isInResult'] = true
     seg3._cache['isInResult'] = true
 
-    const ring = new Ring(seg1)
+    const ring = Ring.factory([seg1, seg2, seg3])[0]
     ring._cache = { isExteriorRing: false }
 
     expect(ring.isExteriorRing).toBeFalsy()
@@ -63,7 +63,7 @@ describe('ring', () => {
     seg3._cache['isInResult'] = true
     seg4._cache['isInResult'] = true
 
-    const ring = new Ring(seg1)
+    const ring = Ring.factory([seg1, seg2, seg3, seg4])[0]
 
     expect(ring.getGeom()).toEqual([[0, 0], [2, 2], [0, 2], [0, 0]])
   })

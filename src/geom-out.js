@@ -2,21 +2,58 @@ const { cmpPoints } = require('./flp')
 const { compareVectorAngles } = require('./vector')
 
 class Ring {
-  static factory (segments) {
+  /* Given the segments from the sweep line pass, compute & return a series
+   * of closed rings from all the segments marked to be part of the result */
+  static factory (allSegments) {
     const ringsOut = []
-    for (let i = 0, iMax = segments.length; i < iMax; i++) {
-      const segment = segments[i]
+
+    for (let i = 0, iMax = allSegments.length; i < iMax; i++) {
+      const segment = allSegments[i]
       if (!segment.isInResult || segment.ringOut) continue
-      ringsOut.push(new Ring(segment))
+
+      let prevEvent = null
+      let event = segment.leftSE
+      let nextEvent = segment.rightSE
+      const tmpRingOut = {} // temporarily mark a segment as spoken for
+      const events = [event]
+
+      /* Walk the chain of linked events to form a closed ring */
+      while (true) {
+        prevEvent = event
+        event = nextEvent
+
+        events.push(event)
+        event.segment.registerRingOut(tmpRingOut)
+
+        const linkedEvents = event.getAvailableLinkedEvents()
+        if (linkedEvents.length === 0) break
+        if (linkedEvents.length === 1) nextEvent = linkedEvents[0].otherSE
+        if (linkedEvents.length > 1) {
+          const comparator = event.getLeftmostComparator(prevEvent)
+          nextEvent = linkedEvents.sort(comparator)[0].otherSE
+        }
+      }
+
+      const firstPt = events[0].point
+      const lastPt = events[events.length - 1].point
+      if (cmpPoints(firstPt, lastPt) !== 0) {
+        throw new Error(
+          `Unable to complete output ring starting at [${firstPt}].` +
+            ` Last matching segment found ends at [${lastPt}].`
+        )
+      }
+
+      ringsOut.push(new Ring(events))
     }
     return ringsOut
   }
 
-  constructor (segment) {
-    this.firstSegment = segment
+  constructor (events) {
+    this.events = events
+    for (let i = 0, iMax = events.length; i < iMax; i++) {
+      events[i].segment.registerRingOut(this)
+    }
     this.poly = null
-    this._points = null
-    this._claimSegments()
     this._clearCache()
   }
 
@@ -25,19 +62,20 @@ class Ring {
   }
 
   getGeom () {
+    // TODO: not true soon??
     // Remove superfluous points (ie extra points along a straight line),
     // Note that the starting/ending point doesn't need to be considered,
     // as the sweep line trace gaurantees it to be not in the middle
     // of a straight segment.
-    const points = [this._points[0]]
-    for (let i = 1, iMax = this._points.length - 1; i < iMax; i++) {
-      const prevPt = this._points[i - 1]
-      const pt = this._points[i]
-      const nextPt = this._points[i + 1]
+    const points = [this.events[0].point]
+    for (let i = 1, iMax = this.events.length - 1; i < iMax; i++) {
+      const prevPt = this.events[i - 1].point
+      const pt = this.events[i].point
+      const nextPt = this.events[i + 1].point
       if (compareVectorAngles(pt, prevPt, nextPt) === 0) continue
       points.push(pt)
     }
-    points.push(this._points[this._points.length - 1])
+    points.push(this.events[this.events.length - 1].point)
     return this.isExteriorRing ? points : points.reverse()
   }
 
@@ -61,41 +99,6 @@ class Ring {
     return this._cache[propName]
   }
 
-  /* Walk down the segments via the linked events, and claim the
-   * segments that will be part of this ring */
-  _claimSegments () {
-    const segment = this.firstSegment
-    let prevEvent = null
-    let event = segment.leftSE
-    let nextEvent = segment.rightSE
-    this._points = [event.point]
-
-    while (true) {
-      prevEvent = event
-      event = nextEvent
-
-      this._points.push(event.point)
-      event.segment.registerRingOut(this)
-
-      const linkedEvents = event.getAvailableLinkedEvents()
-      if (linkedEvents.length === 0) break
-      if (linkedEvents.length === 1) nextEvent = linkedEvents[0].otherSE
-      if (linkedEvents.length > 1) {
-        const comparator = event.getLeftmostComparator(prevEvent)
-        nextEvent = linkedEvents.sort(comparator)[0].otherSE
-      }
-    }
-
-    const firstPt = this._points[0]
-    const lastPt = this._points[this._points.length - 1]
-    if (cmpPoints(firstPt, lastPt) !== 0) {
-      throw new Error(
-        `Unable to complete output ring starting at [${firstPt}].` +
-          ` Last matching segment found ends at [${lastPt}].`
-      )
-    }
-  }
-
   _isExteriorRing () {
     if (!this.enclosingRing) return true
     if (!this.enclosingRing.enclosingRing) return false
@@ -105,7 +108,7 @@ class Ring {
 
   /* Returns the ring that encloses this one, if any */
   _enclosingRing () {
-    let prevSeg = this.firstSegment.prevInResult
+    let prevSeg = this.events[0].segment.prevInResult
     let prevPrevSeg = prevSeg ? prevSeg.prevInResult : null
 
     while (true) {
