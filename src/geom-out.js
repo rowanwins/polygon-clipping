@@ -1,4 +1,3 @@
-const { cmpPoints } = require('./flp')
 const { compareVectorAngles } = require('./vector')
 
 class Ring {
@@ -14,33 +13,66 @@ class Ring {
       let prevEvent = null
       let event = segment.leftSE
       let nextEvent = segment.rightSE
-      const tmpRingOut = {} // temporarily mark a segment as spoken for
       const events = [event]
+
+      const startingLE = event.linkedEvents
+      const intersectionLEs = []
 
       /* Walk the chain of linked events to form a closed ring */
       while (true) {
         prevEvent = event
         event = nextEvent
-
         events.push(event)
-        event.segment.registerRingOut(tmpRingOut)
 
-        const linkedEvents = event.getAvailableLinkedEvents()
-        if (linkedEvents.length === 0) break
-        if (linkedEvents.length === 1) nextEvent = linkedEvents[0].otherSE
-        if (linkedEvents.length > 1) {
+        /* Is the ring complete? */
+        if (event.linkedEvents === startingLE) break
+
+        while (true) {
+          const availableLEs = event.getAvailableLinkedEvents()
+
+          /* Did we hit a dead end? This shouldn't happen. Indicates some earlier
+           * part of the algorithm malfunctioned... please file a bug report. */
+          if (availableLEs.length === 0) {
+            const firstPt = events[0].point
+            const lastPt = events[events.length - 1].point
+            throw new Error(
+              `Unable to complete output ring starting at [${firstPt}].` +
+                ` Last matching segment found ends at [${lastPt}].`
+            )
+          }
+
+          /* Only one way to go, so cotinue on the path */
+          if (availableLEs.length === 1) {
+            nextEvent = availableLEs[0].otherSE
+            break
+          }
+
+          /* We must have an intersection. Check for a completed loop */
+          let indexLE = null
+          for (let j = 0, jMax = intersectionLEs.length; j < jMax; j++) {
+            if (intersectionLEs[j].linkedEvents === event.linkedEvents) {
+              indexLE = j
+              break
+            }
+          }
+          /* Found a completed loop. Cut that off and make a ring */
+          if (indexLE !== null) {
+            const intersectionLE = intersectionLEs.splice(indexLE)[0]
+            const ringEvents = events.splice(intersectionLE.index)
+            ringEvents.unshift(ringEvents[0].otherSE)
+            ringsOut.push(new Ring(ringEvents.reverse()))
+            continue
+          }
+          /* register the intersection */
+          intersectionLEs.push({
+            index: events.length,
+            linkedEvents: event.linkedEvents
+          })
+          /* Choose the left-most option to continue the walk */
           const comparator = event.getLeftmostComparator(prevEvent)
-          nextEvent = linkedEvents.sort(comparator)[0].otherSE
+          nextEvent = availableLEs.sort(comparator)[0].otherSE
+          break
         }
-      }
-
-      const firstPt = events[0].point
-      const lastPt = events[events.length - 1].point
-      if (cmpPoints(firstPt, lastPt) !== 0) {
-        throw new Error(
-          `Unable to complete output ring starting at [${firstPt}].` +
-            ` Last matching segment found ends at [${lastPt}].`
-        )
       }
 
       ringsOut.push(new Ring(events))
@@ -109,6 +141,7 @@ class Ring {
   /* Returns the ring that encloses this one, if any */
   _enclosingRing () {
     let prevSeg = this.events[0].segment.prevInResult
+    while (prevSeg && prevSeg.ringOut === this) prevSeg = prevSeg.prevInResult
     let prevPrevSeg = prevSeg ? prevSeg.prevInResult : null
 
     while (true) {
@@ -175,7 +208,7 @@ class MultiPoly {
     const polys = []
     for (let i = 0, iMax = rings.length; i < iMax; i++) {
       const ring = rings[i]
-      if (ring.poly) return
+      if (ring.poly) continue
       if (ring.isExteriorRing) polys.push(new Poly(ring))
       else {
         if (!ring.enclosingRing.poly) polys.push(new Poly(ring.enclosingRing))
