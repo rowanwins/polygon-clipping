@@ -94,11 +94,7 @@ class Ring {
   }
 
   getGeom () {
-    // TODO: not true soon??
     // Remove superfluous points (ie extra points along a straight line),
-    // Note that the starting/ending point doesn't need to be considered,
-    // as the sweep line trace gaurantees it to be not in the middle
-    // of a straight segment.
     const points = [this.events[0].point]
     for (let i = 1, iMax = this.events.length - 1; i < iMax; i++) {
       const prevPt = this.events[i - 1].point
@@ -107,7 +103,14 @@ class Ring {
       if (compareVectorAngles(pt, prevPt, nextPt) === 0) continue
       points.push(pt)
     }
-    points.push(this.events[this.events.length - 1].point)
+
+    // check if the starting point is necessary
+    const prevPt = this.events[this.events.length - 2].point
+    const pt = this.events[0].point
+    const nextPt = this.events[1].point
+    if (compareVectorAngles(pt, prevPt, nextPt) === 0) points.shift()
+
+    points.push(points[0])
     return this.isExteriorRing ? points : points.reverse()
   }
 

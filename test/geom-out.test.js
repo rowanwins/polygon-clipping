@@ -96,6 +96,52 @@ describe('ring', () => {
       expect(rings[1].getGeom()).toEqual([[0, 0], [3, -3], [3, 3], [0, 0]])
     })
 
+    test('ringed ring interior ring starting point extraneous', () => {
+      const seg1 = new Segment([0, 0], [5, -5])
+      const seg2 = new Segment([4, 0], [5, -5])
+      const seg3 = new Segment([4, 0], [5, 5])
+      const seg4 = new Segment([0, 0], [5, 5])
+
+      seg1.leftSE.link(seg4.leftSE)
+      seg1.rightSE.link(seg2.rightSE)
+      seg2.leftSE.link(seg3.leftSE)
+      seg3.rightSE.link(seg4.rightSE)
+
+      const seg5 = new Segment([1, 0], [4, 1])
+      const seg6 = new Segment([1, 0], [4, -1])
+      const seg7 = new Segment([4, -1], [4, 0])
+      const seg8 = new Segment([4, 0], [4, 1])
+
+      seg5.leftSE.link(seg6.leftSE)
+      seg5.rightSE.link(seg8.rightSE)
+      seg6.rightSE.link(seg7.leftSE)
+      seg7.rightSE.link(seg8.leftSE)
+
+      seg7.rightSE.link(seg2.leftSE)
+
+      seg1._cache['isInResult'] = true
+      seg2._cache['isInResult'] = true
+      seg3._cache['isInResult'] = true
+      seg4._cache['isInResult'] = true
+      seg5._cache['isInResult'] = true
+      seg6._cache['isInResult'] = true
+      seg7._cache['isInResult'] = true
+      seg8._cache['isInResult'] = true
+
+      const segs = [seg1, seg2, seg3, seg4, seg5, seg6, seg7, seg8]
+      const rings = Ring.factory(segs)
+
+      expect(rings.length).toBe(2)
+      expect(rings[0].getGeom()).toEqual([[4, 1], [1, 0], [4, -1], [4, 1]])
+      expect(rings[1].getGeom()).toEqual([
+        [0, 0],
+        [5, -5],
+        [4, 0],
+        [5, 5],
+        [0, 0]
+      ])
+    })
+
     test('ringed ring and bow tie at same point', () => {
       const seg1 = new Segment([0, 0], [3, -3])
       const seg2 = new Segment([3, -3], [3, 0])
