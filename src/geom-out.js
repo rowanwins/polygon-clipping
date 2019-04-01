@@ -93,13 +93,17 @@ export class RingOut {
   getGeom () {
     // Remove superfluous points (ie extra points along a straight line),
     let prevPt = this.events[0].point
+    let currentPoint = this.events[1].point
     const points = [prevPt]
     for (let i = 1, iMax = this.events.length - 1; i < iMax; i++) {
-      const pt = this.events[i].point
       const nextPt = this.events[i + 1].point
-      if (compareVectorAngles(pt, prevPt, nextPt) === 0) continue
-      points.push(pt)
-      prevPt = pt
+      if (compareVectorAngles(currentPoint, prevPt, nextPt) === 0) {
+        currentPoint = nextPt
+        continue
+      }
+      points.push(currentPoint)
+      prevPt = currentPoint
+      currentPoint = nextPt
     }
 
     // ring was all (within rounding error of angle calc) colinear points
