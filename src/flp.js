@@ -29,7 +29,7 @@ export const cmp = {
 
     // check if they're flp equal
     const ab = a - b
-    if (ab * ab < cmp.EPSILON_SQ * a * b) {
+    if (ab * ab < this.EPSILON_SQ * a * b) {
       return 0
     }
 
