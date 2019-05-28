@@ -17,11 +17,11 @@ import SplayTree from 'splaytree'
 export const rounder = {
   xRounder: CoordRounder(),
   yRounder: CoordRounder(),
-  reset: () => {
+  reset () {
     this.xRounder = CoordRounder()
     this.yRounder = CoordRounder()
   },
-  round: (x, y) => {
+  round (x, y) {
     return {
       x: this.xRounder.round(x),
       y: this.yRounder.round(y),

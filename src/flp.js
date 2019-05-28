@@ -6,15 +6,19 @@
 
 
 export const cmp = {
-  epsilon: Number.EPSILON === undefined ? Number.EPSILON : Math.pow(2, -52),
-  
-  EPSILON_SQ: cmp.epsilon * cmp.epsilon,
+  get epsilon () {
+    return Number.EPSILON === undefined ? Number.EPSILON : Math.pow(2, -52)
+  },
+
+  get EPSILON_SQ () {
+    return this.epsilon * this.epsilon
+  }, 
   
   /* FLP comparator */
-  cmp: (a, b) => {
+  cmp (a, b) {
     // check if they're both 0
-    if (-cmp.epsilon < a && a < cmp.epsilon) {
-      if (-cmp.epsilon < b && b < cmp.epsilon) {
+    if (-this.epsilon < a && a < this.epsilon) {
+      if (-this.epsilon < b && b < this.epsilon) {
         return 0
       }
     }

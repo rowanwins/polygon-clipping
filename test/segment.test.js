@@ -9,7 +9,7 @@ describe('constructor', () => {
     const rightSE = new SweepEvent({x: 1, y: 1})
     const rings = []
     const windings = []
-    const seg = new Segment(leftSE, rightSE, rings, windings)
+    const seg = new Segment(leftSE, rightSE, rings, windings, 0)
     expect(seg.rings).toBe(rings)
     expect(seg.windings).toBe(windings)
     expect(seg.leftSE).toBe(leftSE)
@@ -19,6 +19,7 @@ describe('constructor', () => {
     expect(seg.ringOut).toBe(undefined)
     expect(seg.prev).toBe(undefined)
     expect(seg.consumedBy).toBe(undefined)
+    
   })
 
   test('segment Id increments', () => {

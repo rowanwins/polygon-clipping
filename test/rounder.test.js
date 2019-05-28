@@ -1,6 +1,6 @@
 /* eslint-env jest */
 
-import rounder from '../src/rounder'
+import {rounder} from '../src/rounder'
 
 describe('rounder.round()', () => {
   test('no overlap', () => {
