@@ -1,5 +1,5 @@
 import { compareVectorAngles } from './vector'
-import rounder from './rounder'
+import {rounder} from './rounder'
 
 /* Given input geometry as a standard array-of-arrays geojson-style
  * geometry, return one that uses objects as points, for better perf */

@@ -1,7 +1,7 @@
 import Segment from './segment'
 
 export class RingIn {
-  constructor (geomRing, poly, isExterior) {
+  constructor (geomRing, poly, isExterior, segmentId) {
     this.poly = poly
     this.isExterior = isExterior
     this.segments = []
@@ -14,14 +14,14 @@ export class RingIn {
 
     for (let i = 1, iMax = geomRing.length; i < iMax; i++) {
       let point = geomRing[i]
-      this.segments.push(Segment.fromRing(prevPoint, point, this))
+      this.segments.push(Segment.fromRing(prevPoint, point, this, segmentId))
       if (point.x < this.bbox.ll.x) this.bbox.ll.x = point.x
       if (point.y < this.bbox.ll.y) this.bbox.ll.y = point.y
       if (point.x > this.bbox.ur.x) this.bbox.ur.x = point.x
       if (point.y > this.bbox.ur.y) this.bbox.ur.y = point.y
       prevPoint = point
     }
-    this.segments.push(Segment.fromRing(prevPoint, geomRing[0], this))
+    this.segments.push(Segment.fromRing(prevPoint, geomRing[0], this, segmentId))
   }
 
   getSweepEvents () {
@@ -36,8 +36,8 @@ export class RingIn {
 }
 
 export class PolyIn {
-  constructor (geomPoly, multiPoly) {
-    this.exteriorRing = new RingIn(geomPoly[0], this, true)
+  constructor (geomPoly, multiPoly, segmentId) {
+    this.exteriorRing = new RingIn(geomPoly[0], this, true, segmentId)
     // copy by value
     this.bbox = {
       ll: { x: this.exteriorRing.bbox.ll.x, y: this.exteriorRing.bbox.ll.y },
@@ -45,7 +45,7 @@ export class PolyIn {
     }
     this.interiorRings = []
     for (let i = 1, iMax = geomPoly.length; i < iMax; i++) {
-      const ring = new RingIn(geomPoly[i], this, false)
+      const ring = new RingIn(geomPoly[i], this, false, segmentId)
       if (ring.bbox.ll.x < this.bbox.ll.x) this.bbox.ll.x = ring.bbox.ll.x
       if (ring.bbox.ll.y < this.bbox.ll.y) this.bbox.ll.y = ring.bbox.ll.y
       if (ring.bbox.ur.x > this.bbox.ur.x) this.bbox.ur.x = ring.bbox.ur.x
@@ -56,26 +56,28 @@ export class PolyIn {
   }
 
   getSweepEvents () {
-    const sweepEvents = this.exteriorRing.getSweepEvents()
+    let sweepEvents = this.exteriorRing.getSweepEvents()
     for (let i = 0, iMax = this.interiorRings.length; i < iMax; i++) {
       const ringSweepEvents = this.interiorRings[i].getSweepEvents()
-      for (let j = 0, jMax = ringSweepEvents.length; j < jMax; j++) {
-        sweepEvents.push(ringSweepEvents[j])
-      }
+      Array.prototype.push.apply(sweepEvents, ringSweepEvents)
+
+    //   for (let j = 0, jMax = ringSweepEvents.length; j < jMax; j++) {
+    //     sweepEvents.push(ringSweepEvents[j])
+    //   }
     }
     return sweepEvents
   }
 }
 
 export class MultiPolyIn {
-  constructor (geomMultiPoly) {
+  constructor (geomMultiPoly, segmentId) {
     this.polys = []
     this.bbox = {
       ll: { x: Number.POSITIVE_INFINITY, y: Number.POSITIVE_INFINITY },
       ur: { x: Number.NEGATIVE_INFINITY, y: Number.NEGATIVE_INFINITY },
     }
     for (let i = 0, iMax = geomMultiPoly.length; i < iMax; i++) {
-      const poly = new PolyIn(geomMultiPoly[i], this)
+      const poly = new PolyIn(geomMultiPoly[i], this, segmentId)
       if (poly.bbox.ll.x < this.bbox.ll.x) this.bbox.ll.x = poly.bbox.ll.x
       if (poly.bbox.ll.y < this.bbox.ll.y) this.bbox.ll.y = poly.bbox.ll.y
       if (poly.bbox.ur.x > this.bbox.ur.x) this.bbox.ur.x = poly.bbox.ur.x

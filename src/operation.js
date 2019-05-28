@@ -3,13 +3,14 @@ import { getBboxOverlap } from './bbox'
 import * as cleanInput from './clean-input'
 import * as geomIn from './geom-in'
 import * as geomOut from './geom-out'
-import rounder from './rounder'
+import {rounder} from './rounder'
 import SweepEvent from './sweep-event'
 import SweepLine from './sweep-line'
 
-export class Operation {
+export const operation = {
+  type: null,
   run (type, geom, moreGeoms) {
-    operation.type = type
+    this.type = type
     rounder.reset()
 
     /* Make a copy of the input geometry with rounded points as objects */
@@ -23,11 +24,15 @@ export class Operation {
       cleanInput.forceMultiPoly(geoms[i])
       cleanInput.cleanMultiPoly(geoms[i])
     }
+    
+    // Give segments unique ID's to get consistent sorting of
+    // segments and sweep events when all else is identical
+    let segmentId = 0
 
     /* Convert inputs to MultiPoly objects, mark subject */
     const multipolys = []
     for (let i = 0, iMax = geoms.length; i < iMax; i++) {
-      multipolys.push(new geomIn.MultiPolyIn(geoms[i]))
+      multipolys.push(new geomIn.MultiPolyIn(geoms[i], segmentId))
     }
     multipolys[0].markAsSubject()
     operation.numMultiPolys = multipolys.length
@@ -104,8 +109,3 @@ export class Operation {
     return result.getGeom()
   }
 }
-
-// singleton available by import
-const operation = new Operation()
-
-export default operation

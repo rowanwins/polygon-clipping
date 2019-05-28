@@ -1,16 +1,11 @@
-import operation from './operation'
+import {operation} from './operation'
 import SweepEvent from './sweep-event'
 import { isInBbox, getBboxOverlap } from './bbox'
 import { cmp } from './flp'
 import { closestPoint, intersection } from './vector'
-import rounder from './rounder'
-
-// Give segments unique ID's to get consistent sorting of
-// segments and sweep events when all else is identical
-let segmentId = 0
+import {rounder} from './rounder'
 
 export default class Segment {
-
   /* This compare() function is for ordering segments in the sweep
    * line tree, and does so according to the following criteria:
    *
@@ -136,7 +131,7 @@ export default class Segment {
 
   /* Warning: a reference to ringWindings input will be stored,
    *  and possibly will be later modified */
-  constructor (leftSE, rightSE, rings, windings) {
+  constructor (leftSE, rightSE, rings, windings, segmentId) {
     this.id = ++segmentId
     this.leftSE = leftSE
     leftSE.segment = this
@@ -150,7 +145,7 @@ export default class Segment {
     // this.ringOut, this.consumedBy, this.prev
   }
 
-  static fromRing(pt1, pt2, ring) {
+  static fromRing(pt1, pt2, ring, segmentId) {
     let leftPt, rightPt, winding
 
     // ordering the two points according to sweep line ordering
@@ -171,7 +166,7 @@ export default class Segment {
 
     const leftSE = new SweepEvent(leftPt, true)
     const rightSE = new SweepEvent(rightPt, false)
-    return new Segment(leftSE, rightSE, [ring], [winding])
+    return new Segment(leftSE, rightSE, [ring], [winding], segmentId)
   }
 
   /* When a segment is split, the rightSE is replaced with a new sweep event */
@@ -232,12 +227,12 @@ export default class Segment {
       // is the segment more vertical?
       if (ry - ly > rx - lx) {
         // use the X coordinate
-        const cmpX = cmp(interPt.x, point.x)
+        const cmpX = cmp.cmp(interPt.x, point.x)
         if (cmpX != 0) return cmpX
       }
       else {
         // segment is more horizontal, so use Y coord
-        const cmpY = cmp(point.y, interPt.y)
+        const cmpY = cmp.cmp(point.y, interPt.y)
         if (cmpY != 0) return cmpY
       }
     }
@@ -246,12 +241,12 @@ export default class Segment {
       // is the segment more vertical?
       if (ly - ry > rx - lx) {
         // use the X coordinate
-        const cmpX = cmp(point.x, interPt.x)
+        const cmpX = cmp.cmp(point.x, interPt.x)
         if (cmpX != 0) return cmpX
       }
       else {
         // segment is more horizontal, so use the Y coordinate
-        const cmpY = cmp(point.y, interPt.y)
+        const cmpY = cmp.cmp(point.y, interPt.y)
         if (cmpY != 0) return cmpY
       }
     }

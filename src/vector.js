@@ -11,7 +11,7 @@ export const compareVectorAngles = (basePt, endPt1, endPt2) => {
   const v1 = { x: endPt1.x - basePt.x, y: endPt1.y - basePt.y }
   const v2 = { x: endPt2.x - basePt.x, y: endPt2.y - basePt.y }
   const kross = crossProduct(v1, v2)
-  return cmp(kross, 0)
+  return cmp.cmp(kross, 0)
 }
 
 export const length = v => Math.sqrt(dotProduct(v, v))

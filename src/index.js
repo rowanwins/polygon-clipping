@@ -1,20 +1,12 @@
-import operation from './operation'
-
-const union = (geom, ...moreGeoms) =>
-  operation.run('union', geom, moreGeoms)
-
-const intersection = (geom, ...moreGeoms) =>
-  operation.run('intersection', geom, moreGeoms)
-
-const xor = (geom, ...moreGeoms) =>
-  operation.run('xor', geom, moreGeoms)
-
-const difference = (subjectGeom, ...clippingGeoms) =>
-  operation.run('difference', subjectGeom, clippingGeoms)
+import {operation} from './operation'
 
 export default {
-  union: union,
-  intersection: intersection,
-  xor: xor,
-  difference: difference,
+  union: (geom, ...moreGeoms) =>
+    operation.run('union', geom, moreGeoms),
+  intersection: (geom, ...moreGeoms) =>
+    operation.run('intersection', geom, moreGeoms),
+  xor: (geom, ...moreGeoms) =>
+    operation.run('xor', geom, moreGeoms),
+  difference: (subjectGeom, ...clippingGeoms) =>
+    operation.run('difference', subjectGeom, clippingGeoms),
 }
