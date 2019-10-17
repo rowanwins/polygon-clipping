@@ -1,8 +1,7 @@
 import operation from './operation'
 import SweepEvent from './sweep-event'
 import { isInBbox, getBboxOverlap } from './bbox'
-import { cmp } from './flp'
-import { closestPoint, intersection } from './vector'
+import { intersection } from './vector'
 import rounder from './rounder'
 
 // Give segments unique ID's to get consistent sorting of
@@ -206,58 +205,44 @@ export default class Segment {
     )
   }
 
-  /* Compare this segment with a point. Return value indicates:
-   *     1: point lies above or to the left of segment
-   *     0: point is colinear to segment
-   *    -1: point is below or to the right of segment */
+  /* Compare this segment with a point.
+   *
+   * A point P is considered to be colinear to a segment if there
+   * exists a distance D such that if we travel along the segment
+   * from one * endpoint towards the other a distance D, we find
+   * ourselves at point P.
+   *
+   * Return value indicates:
+   *
+   *   1: point lies above the segment (to the left of vertical)
+   *   0: point is colinear to segment
+   *  -1: point lies below the segment (to the right of vertical)
+   */
   comparePoint (point) {
     if (this.isAnEndpoint(point)) return 0
-    const interPt = closestPoint(this.leftSE.point, this.rightSE.point, point)
 
-    // use cmp() to do the same rounding as would apply in rounder.round
-    // but avoid using rounder.round for performance boost, and to avoid
-    // saving the result in the rounding trees
+    const lPt = this.leftSE.point
+    const rPt = this.rightSE.point
+    const v = this.vector()
 
-    // also, there is a fair amount of rounding error introduced when computing
-    // the closestPoint to a nearly vertical or horizontal segment. Thus, we use
-    // the more accurate coordinate for comparison of the two points
-
-    const lx = this.leftSE.point.x
-    const ly = this.leftSE.point.y
-    const rx = this.rightSE.point.x
-    const ry = this.rightSE.point.y
-
-    // is the segment upward sloping?
-    if (ry >= ly) {
-      // is the segment more vertical?
-      if (ry - ly > rx - lx) {
-        // use the X coordinate
-        const cmpX = cmp(interPt.x, point.x)
-        if (cmpX != 0) return cmpX
-      }
-      else {
-        // segment is more horizontal, so use Y coord
-        const cmpY = cmp(point.y, interPt.y)
-        if (cmpY != 0) return cmpY
-      }
-    }
-    else {
-      // segment is more downward sloping
-      // is the segment more vertical?
-      if (ly - ry > rx - lx) {
-        // use the X coordinate
-        const cmpX = cmp(point.x, interPt.x)
-        if (cmpX != 0) return cmpX
-      }
-      else {
-        // segment is more horizontal, so use the Y coordinate
-        const cmpY = cmp(point.y, interPt.y)
-        if (cmpY != 0) return cmpY
-      }
+    // Exactly vertical segments.
+    if (lPt.x === rPt.x) {
+      if (point.x === lPt.x) return 0
+      return point.x < lPt.x ? 1 : -1
     }
 
-    // on the line
-    return 0
+    // Nearly vertical segments with an intersection.
+    // Check to see where a point on the line with matching Y coordinate is.
+    const yDist = (point.y - lPt.y) / v.y
+    const xFromYDist = lPt.x + yDist * v.x
+    if (point.x === xFromYDist) return 0
+
+    // General case.
+    // Check to see where a point on the line with matching X coordinate is.
+    const xDist =  (point.x - lPt.x) / v.x
+    const yFromXDist = lPt.y + xDist * v.y
+    if (point.y === yFromXDist) return 0
+    return point.y < yFromXDist ? -1 : 1
   }
 
   /**
